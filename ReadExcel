@@ -1,0 +1,159 @@
+Private Sub butSave_Click()
+sAllocatedNo = 0
+tMssnNo = txtMssnNo.Value
+tMssnSubNo = cboMssnSubNo.Value
+sExist = False
+
+For X = 1 To Me.lvwOrderEntry00PID.ListItems.Count
+ 
+   If Me.lvwOrderEntry00PID.ListItems(X).Text = " " Then
+
+       If Me.lvwOrderEntry00PID.ListItems(X).SubItems(2) <> "" Then
+           tPID = Me.lvwOrderEntry00PID.ListItems(X).SubItems(2)
+           tName = Trim(UCase(Me.lvwOrderEntry00PID.ListItems(X).SubItems(3)))
+           tDOB = Trim(UCase(Me.lvwOrderEntry00PID.ListItems(X).SubItems(4)))
+           tAge = Trim(UCase(Me.lvwOrderEntry00PID.ListItems(X).SubItems(5)))
+           tSex = Trim(UCase(Me.lvwOrderEntry00PID.ListItems(X).SubItems(6)))
+           tDateModif = Format(Now, "yyyy-mm-dd hh:mm:ss")
+           tStatus = "N"
+           tCnt_Test_Price = Trim(Me.lvwOrderEntry00PID.ListItems(X).SubItems(7))
+           Pos = InStr(tCnt_Test_Price, ";")
+           tCnt = Mid(tCnt_Test_Price, 1, Pos - 1)
+           tTests_Price = Mid(tCnt_Test_Price, Pos + 2)
+           OpenConnectionHPLAB
+           OpenConnectionHCLAB
+           CHECK_F_NO_EXCEEDS
+           If sAllocatedNo < txtNoOfPx.Value Then
+               CHECK_F_PX_EXIST_SAME_MISSION00 ' FILTER IF PATIENT IS ALREADY ENCODED
+               If sExist = True Then
+                   MsgBox "Patient " & sPName & " IS ALREADY IN THIS BATCH." _
+                          & vbCrLf & "DUPLICATE RECORD IS NOT ALLOWED.", vbOKOnly
+               ElseIf sExist = False Then
+                sSQL = "INSERT INTO t_Mission_Trx_DTL " _
+                       & "(MissionNo, MSubNo, PatientID, PatientName, DOB, AgeYY, " _
+                       & "Sex, Status, ModifierCode, ModifierName, LastModified) " _
+                       & "VALUES ('" & tMssnNo & "','" & tMssnSubNo & "', " _
+                       & "'" & tPID & "','" & tName & "','" & tDOB & "','" & tAge & "', " _
+                       & "'" & tSex & "','" & tStatus & "','" & sUserCode & "', " _
+                       & "'" & sUserName & "','" & tDateModif & "')"
+                        
+                
+                   ConHP.Execute sSQL
+                   
+                   If Me.lvwOrderEntry00PID.ListItems(X).SubItems(7) <> "" Then   'IF TEST IS ALREADY INPUTTED
+                       GET_DTL_NUMBER
+                       Me.lvwOrderEntry00PID.ListItems(X).SubItems(1) = tAutoDTLNo ' TO CHANGE
+                       For Y = 1 To tCnt
+                           Pos = InStr(tTests_Price, ",")
+                           If Pos <> 0 Then
+                               tTest_Price = Mid(tTests_Price, 1, Pos - 1)
+                           Else
+                               tTest_Price = tTests_Price
+                           End If
+                           
+                           Pos = InStr(tTest_Price, "=")
+                           tTest = Mid(tTest_Price, 1, Pos - 1)
+                           tPrice = Mid(tTest_Price, Pos + 1)
+                           
+                           
+
+Private Sub btnImportfrmExcel_Click()
+   Dim ExcelObj As Object
+   Dim ExcelBook As Object
+   Dim ExcelSheet As Object
+   Dim i As Integer
+   Dim age As String
+   Dim dob As Date
+       
+On Error GoTo handler
+
+   Dim currentEntry As String
+   Set ExcelObj = CreateObject("Excel.Application")
+   Set ExcelSheet = CreateObject("Excel.Sheet")
+   ExcelObj.WorkBooks.Open App.Path & "\" & Me.txtMssnNo.Text & ".xls"
+   Set ExcelBook = ExcelObj.WorkBooks(1)
+   
+   Dim l As ListItem
+      
+   Set ExcelSheet = ExcelBook.WorkSheets(1)
+                 
+           lvwOrderEntry00PID.ListItems.Clear
+           With ExcelSheet
+           i = 1
+           Do Until .cells(i, 1) = "END"
+               Set l = lvwOrderEntry00PID.ListItems.Add(, , " ")
+               currentEntry = .cells(i, 3)
+               l.SubItems(2) = .cells(i, 2)
+               l.SubItems(3) = .cells(i, 3)
+               l.SubItems(4) = CDate(.cells(i, 4))
+               l.SubItems(5) = .cells(i, 5)
+               l.SubItems(6) = .cells(i, 6)
+               GET_DEF_TEST
+               l.SubItems(7) = sDefTest
+               i = i + 1
+               Me.Caption = l.SubItems(3) + "done."
+               
+           Loop
+           End With
+           
+    ' CHECK_F_MISNUM00_HAD_ENTRY 'CHECK MISSION # ALREADY HAD ENTRY
+   
+    ' If sExist = True Then '  "Patient " & sPName &
+    '   MsgBox "ALREADY HAD A RECORD IN THIS MISSION NUMBER." _
+    ' & vbCrLf & "DO YOU WANT TO OVERWRITE RECORD?.", vbOKOnly
+    ' ElseIf sExist = False Then
+              
+           ExcelObj.WorkBooks.Close
+           Set ExcelSheet = Nothing
+           Set ExcelBook = Nothing
+           Set ExcelObj = Nothing
+   'End If
+
+handler:
+   
+   
+   If Err.Number <> 0 Then
+   
+    ExcelObj.WorkBooks.Close
+    Set ExcelSheet = Nothing
+    Set ExcelBook = Nothing
+    Set ExcelObj = Nothing
+    
+    MsgBox "Next entry to " + Me.Caption + " is invalid. Please review the excel file and try again. :)"
+    
+   End If
+
+End Sub
+
+Private Sub btnPVIEW_Click()
+   If txtMssnNo.Value <> "" Then
+       tMssnNo = txtMssnNo.Value
+       tMssnSubNo = cboMssnSubNo.Value
+       frmPrev.Show 1
+   End If
+End Sub
+
+Private Sub butClear_Click()
+lvwOrderEntry00PID.ListItems.Clear
+   txtMssnNo.Value = ""
+   cboMssnSubNo.Value = ""
+   txtSource.Value = ""
+   txtClin.Value = ""
+   txtNoOfPx.Value = ""
+   txtLabNoF.Value = ""
+   txtLabNoT.Value = ""
+   txtDt1.Value = ""
+   txtDt2.Value = ""
+   txt_tests.Text = ""
+   
+End Sub
+
+Private Sub butExit_Click()
+frm00PIDEntry.Hide
+Unload Me
+frmMainMenu.Show
+
+End Sub
+Private Sub butSave_Click()
+sAllocatedNo = 0
+tMssnNo = txtMssnNo.Value
